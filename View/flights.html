@@ -5,22 +5,28 @@
       function csvUploader() {
         return {
           vuelos: JSON.parse(localStorage.getItem('vuelos')) || [],
+          archivoOriginal: null,
           mensaje: '',
+          
           loadFile(event) {
             const file = event.target.files[0];
             if (!file) return;
+            this.archivoOriginal = file;
+
+
             const reader = new FileReader();
             reader.onload = (e) => {
+              console.log("Archivo leído:", e.target.result);
               const lines = e.target.result.split(/\r?\n/);
-              const headers = lines[0].split(',');
+              const headers = lines[0].split(';');
               this.vuelos = lines.slice(1).filter(Boolean).map(line => {
-                const [id, origen, hl, destino, sl, capacidad] = line.split(',');
+                const [id, origen, dept, destino, arrt, capacidad] = line.split(';');
                 return {
                   id: id.trim(),
                   origen: origen.trim(),
-                  hl: hl.trim(),
+                  dept: dept.trim(),
                   destino: destino.trim(),
-                  sl: sl.trim(),
+                  arrt: arrt.trim(),
                   capacidad: capacidad.trim()
                 };
               });
@@ -28,22 +34,52 @@
             };
             reader.readAsText(file);
           },
+
           async enviarVuelos() {
+            if (!this.archivoOriginal) {
+              this.mensaje = "No hay archivo cargado.";
+              return;
+            }
+
+            const formData = new FormData();
+            formData.append('archivo', this.archivoOriginal);
+
             try {
-              const response = await fetch('http://localhost:8000/Vuelos', {
+              const response = await fetch('http://127.0.0.1:8000/subir_archivo', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(this.vuelos)
+                body: formData
               });
               const data = await response.json();
               this.mensaje = data.mensaje || 'Datos enviados correctamente';
             } catch (error) {
               this.mensaje = 'Error al enviar los datos';
+              console.error(error)
             }
           },
+
           borrarDatos() {
             localStorage.removeItem('vuelos');
             this.vuelos = [];
+
+            if (this.archivoOriginal) {
+              const nombreArchivo = this.archivoOriginal.name;
+
+              fetch(`http://127.0.0.1:8000/borrar_archivo_local/${encodeURIComponent(nombreArchivo)}`, {
+                method: 'DELETE'
+              })
+              .then(response => {
+                if (!response.ok) throw new Error("No se pudo eliminar en el servidor");
+                return response.json();
+              })
+              .then(data => {
+                console.log(data.mensaje);
+              })
+              .catch(error => {
+                console.error('Error al eliminar el archivo en el servidor:', error);
+              });
+            }
+
+            this.archivoOriginal = null;
             this.mensaje = "Datos borrados del almacenamiento local.";
           }
         };

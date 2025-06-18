@@ -12,9 +12,9 @@
             const reader = new FileReader();
             reader.onload = (e) => {
               const lines = e.target.result.split(/\r?\n/);
-              const headers = lines[0].split(',');
+              const headers = lines[0].split(';');
               this.conecciones = lines.slice(1).filter(Boolean).map(line => {
-                const [idT, idV] = line.split(',');
+                const [idT, idV] = line.split(';');
                 return {
                   idT: idT.trim(),
                   idV: idV.trim(),
@@ -26,7 +26,7 @@
           },
           async enviarConecciones() {
             try {
-              const response = await fetch('http://localhost:8000/Conecciones', {
+              const response = await fetch('http://127.0.0.1:8000/subir_archivo', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(this.conecciones)

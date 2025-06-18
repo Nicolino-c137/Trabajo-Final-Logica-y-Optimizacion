@@ -1,5 +1,6 @@
 from fastapi import APIRouter, UploadFile, HTTPException
 from Model import cos, watson_runtime
+import os
 
 router= APIRouter()
 
@@ -21,3 +22,14 @@ def ejecutar_modelo():
 def obtener_solucion():
     cos.get_solucion()
     return {"Mensaje": "Solución obtenida exitosamente"}
+
+@router.delete("/borrar_archivo_local/{archivo}")
+def eliminar_archivo(archivo: str):
+    try:
+        print(archivo)
+        os.remove(archivo)
+        return {"Mensaje": "Archivo eliminado exitosamente"}
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Archivo no encontrado")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Error al eliminar el archivo")

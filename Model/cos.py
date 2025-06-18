@@ -1,4 +1,4 @@
-from ibm_botocore.client import Config, ClientError
+from ibm_botocore.client import Config
 from ibm_boto3 import client
 from dotenv import load_dotenv
 import os
@@ -19,5 +19,5 @@ cliente_cos= client("s3",
 def subir_archivo(archivo):
     cliente_cos.upload_file(archivo, Bucket= bucket_name, Key= archivo)
     
-def get_solucion():
+def get_solucion():    
     cliente_cos.download_file(bucket_name, "AllocationSolution.csv", "Solucion.csv")
