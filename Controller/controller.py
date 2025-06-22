@@ -1,6 +1,9 @@
 from fastapi import APIRouter, UploadFile, HTTPException
+from fastapi.responses import FileResponse
 from Model import cos, watson_runtime
 import os
+import pandas as pd
+
 
 router= APIRouter()
 
@@ -22,6 +25,22 @@ def ejecutar_modelo():
 def obtener_solucion():
     cos.get_solucion()
     return {"Mensaje": "Solución obtenida exitosamente"}
+
+@router.get("/ver_solucion")
+def ver_solucion():
+    try:
+        df = pd.read_csv("Solucion.csv")
+        return df.to_dict(orient="records")
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Archivo de solución no encontrado")
+    
+@router.get("/descargar_solucion")
+def descargar_solucion():
+    archivo = "Solucion.csv"
+    if os.path.exists(archivo):
+        return FileResponse(archivo, filename="Solucion.csv", media_type="text/csv")
+    else:
+        raise HTTPException(status_code=404, detail="Archivo no encontrado")
 
 @router.delete("/borrar_archivo_local/{archivo}")
 def eliminar_archivo(archivo: str):
