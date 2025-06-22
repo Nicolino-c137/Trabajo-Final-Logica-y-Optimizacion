@@ -1,26 +1,23 @@
+<!DOCTYPE html>
 <html>
   <head>
-    <!-- Define el componente antes de cargar Alpine -->
     <script>
       function csvUploader() {
         return {
           itinerarios: JSON.parse(localStorage.getItem('itinerarios')) || [],
           archivoOriginal: null,
-          mensaje: '',
-
+          archivoEnviado: localStorage.getItem('archivoEnviado') === 'true',
+          mensaje: localStorage.getItem('mensaje') || '',
+          nombreArchivo: localStorage.getItem('nombreArchivo') || '',
           loadFile(event) {
             const file = event.target.files[0];
             if (!file) return;
             this.archivoOriginal = file;
-            console.log("Archivo seleccionado:", file.name);
-
-
+            this.nombreArchivo = file.name;
+            localStorage.setItem('nombreArchivo', this.nombreArchivo);
             const reader = new FileReader();
             reader.onload = (e) => {
-              console.log("Archivo leído:", e.target.result);
-
               const lines = e.target.result.split(/\r?\n/);
-              const headers = lines[0].split(';');
               this.itinerarios = lines.slice(1).filter(Boolean).map(line => {
                 const [id, cantV, demanda, tarifa] = line.split(';');
                 return {
@@ -31,6 +28,10 @@
                 };
               });
               localStorage.setItem('itinerarios', JSON.stringify(this.itinerarios));
+              this.archivoEnviado = false;
+              localStorage.setItem('archivoEnviado', 'false');
+              this.mensaje = '';
+              localStorage.setItem('mensaje', '');
             };
             reader.readAsText(file);
           },
@@ -50,43 +51,31 @@
                 body: formData
               });
               const data = await response.json();
-              this.mensaje = data.mensaje || 'Archivo subido correctamente a COS.';
+              this.mensaje = data.mensaje || 'Archivo subido exitosamente.';
+              this.archivoEnviado = true;
+              localStorage.setItem('mensaje', this.mensaje);
+              localStorage.setItem('archivoEnviado', 'true');
             } catch (error) {
-              this.mensaje = 'Error al subir el archivo';
-              console.error(error)
+              this.mensaje = 'Error al subir el archivo.';
+              console.error(error);
             }
           },
 
           borrarDatos() {
             localStorage.removeItem('itinerarios');
+            localStorage.removeItem('archivoEnviado');
+            localStorage.removeItem('mensaje');
+            localStorage.removeItem('nombreArchivo');
             this.itinerarios = [];
-            
-            if (this.archivoOriginal) {
-              const nombreArchivo = this.archivoOriginal.name;
-
-              fetch(`http://127.0.0.1:8000/borrar_archivo_local/${encodeURIComponent(nombreArchivo)}`, {
-                method: 'DELETE'
-              })
-              .then(response => {
-                if (!response.ok) throw new Error("No se pudo eliminar en el servidor");
-                return response.json();
-              })
-              .then(data => {
-                console.log(data.mensaje);
-              })
-              .catch(error => {
-                console.error('Error al eliminar el archivo en el servidor:', error);
-              });
-            }
-
             this.archivoOriginal = null;
-            this.mensaje = "Datos borrados del almacenamiento local.";
+            this.archivoEnviado = false;
+            this.mensaje = "Datos borrados exitosamente, Por favor recargue la pagina.";
+            this.nombreArchivo = '';
           }
         }
       }
     </script>
 
-    <!-- Carga Alpine -->
     <script src="https://unpkg.com/alpinejs" defer></script>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <title>Itinerarios</title>
@@ -95,7 +84,7 @@
   </head>
 
   <body>
-    <div class="relative flex size-full min-h-screen flex-col bg-neutral-50 group/design-root overflow-x-hidden" style='font-family: "Plus Jakarta Sans", "Noto Sans", sans-serif;'>
+    <div class="relative flex size-full min-h-screen flex-col bg-neutral-50 overflow-x-hidden" style='font-family: "Plus Jakarta Sans", "Noto Sans", sans-serif;'>
       <div class="layout-container flex h-full grow flex-col">
         <header class="flex items-center justify-between border-b border-[#ededed] px-10 py-3">
           <div class="flex items-center gap-4 text-[#141414]">
@@ -112,11 +101,14 @@
               <p class="text-[32px] font-bold">Fase Itinerarios</p>
             </div>
 
-            <!-- Carga de archivo -->
+            <!-- Archivo -->
             <div class="flex px-3 py-1 justify-start">
               <input type="file" x-ref="fileInput" @change="loadFile($event)" accept=".csv" class="hidden">
-              <button type="button" @click="$refs.fileInput.click()" class="cursor-pointer rounded-full h-10 px-4 bg-black text-neutral-50 text-sm font-bold leading-normal tracking-[0.015em]"x-ref="fileInputButton">Seleccionar archivo CSV</button>
+              <button type="button" @click="$refs.fileInput.click()" class="cursor-pointer rounded-full h-10 px-4 bg-black text-neutral-50 text-sm font-bold leading-normal tracking-[0.015em]">
+                Seleccionar archivo CSV
+              </button>
             </div>
+
             <!-- Tabla -->
             <template x-if="itinerarios.length > 0">
               <div class="px-3 py-2 @container">
@@ -143,28 +135,28 @@
                     </tbody>
                   </table>
 
-                  <!-- Botón enviar -->
-                  <div class="px-4 py-4">
-                    <button @click="borrarDatos()" 
-                      class="h-10 px-4 bg-[#ededed] text-[#141414] rounded-full text-sm font-bold">
+                  <!-- Botones -->
+                  <div class="px-4 py-4 flex gap-4">
+                    <button @click="borrarDatos()" class="h-10 px-4 bg-[#ededed] text-[#141414] rounded-full text-sm font-bold">
                       Borrar datos
                     </button>
-                    <button @click="enviarItinerarios()"
-                      class="h-10 px-4 bg-black text-white rounded-full text-sm font-bold">
+                    <button @click="enviarItinerarios()" :disabled="archivoEnviado"
+                      class="h-10 px-4 bg-black text-white rounded-full text-sm font-bold disabled:opacity-50">
                       Enviar
                     </button>
                   </div>
                 </div>
               </div>
             </template>
+
             <!-- Mensaje -->
             <p class="text-neutral-500 text-sm font-normal leading-normal pb-3 pt-1 px-4" x-text="mensaje"></p>
+
+            <!-- Siguiente -->
             <div class="flex justify-stretch">
               <div class="flex flex-1 gap-3 flex-wrap px-4 py-3 justify-end">
-                <a href="Flights.html"
-                class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 px-4 bg-black text-neutral-50 text-sm font-bold leading-normal tracking-[0.015em]"
-                >
-                <span class="truncate">Siguiente</span>
+                <a href="Flights.html" class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 px-4 bg-black text-neutral-50 text-sm font-bold leading-normal tracking-[0.015em]">
+                  <span class="truncate">Siguiente</span>
                 </a>
               </div>
             </div>

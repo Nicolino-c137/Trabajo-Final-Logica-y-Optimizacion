@@ -5,10 +5,16 @@
       function csvUploader() {
         return {
           conecciones: JSON.parse(localStorage.getItem('conecciones')) || [],
-          mensaje: '',
+          archivoOriginal: null,
+          archivoEnviado: localStorage.getItem('archivoEnviado') === 'true',
+          mensaje: localStorage.getItem('mensaje') || '',
+          nombreArchivo: localStorage.getItem('nombreArchivo') || '',
           loadFile(event) {
             const file = event.target.files[0];
             if (!file) return;
+            this.archivoOriginal = file;
+            this.nombreArchivo = file.name;
+            localStorage.setItem('nombreArchivo', this.nombreArchivo);
             const reader = new FileReader();
             reader.onload = (e) => {
               const lines = e.target.result.split(/\r?\n/);
@@ -21,28 +27,47 @@
                 };
               });
               localStorage.setItem('conecciones', JSON.stringify(this.conecciones));
+              this.archivoEnviado = false;
+              localStorage.setItem('archivoEnviado', 'false');
+              this.mensaje = '';
+              localStorage.setItem('mensaje', '');
             };
             reader.readAsText(file);
           },
           async enviarConecciones() {
+            if (!this.archivoOriginal) {
+              this.mensaje = "No hay archivo cargado.";
+              return;
+            }
+            const formData = new FormData();
+            formData.append('archivo', this.archivoOriginal);
             try {
               const response = await fetch('http://127.0.0.1:8000/subir_archivo', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(this.conecciones)
+                body: formData
               });
               const data = await response.json();
-              this.mensaje = data.mensaje || 'Datos enviados correctamente';
+              this.mensaje = data.mensaje || 'Archivo subido exitosamente.';
+              this.archivoEnviado = true;
+              localStorage.setItem('mensaje', this.mensaje);
+              localStorage.setItem('archivoEnviado', 'true');
             } catch (error) {
               this.mensaje = 'Error al enviar los datos';
+              console.error(error)
             }
           },
           borrarDatos() {
             localStorage.removeItem('conecciones');
+            localStorage.removeItem('archivoEnviado');
+            localStorage.removeItem('mensaje');
+            localStorage.removeItem('nombreArchivo');
             this.conecciones = [];
-            this.mensaje = "Datos borrados del almacenamiento local.";
+            this.archivoOriginal = null;
+            this.archivoEnviado = false;
+            this.mensaje = "Datos borrados exitosamente, Por favor recargue la pagina.";
+            this.nombreArchivo = '';
           }
-        };
+        }
       }
     </script>
 
@@ -83,13 +108,12 @@
               <div class="px-3 py-2 @container">
                 <div class="overflow-hidden rounded-xl border border-[#dbdbdb] bg-neutral-50">
                   <!-- Botón enviar -->
-                  <div class="px-4 py-4">
-                    <button @click="borrarDatos()" 
-                      class="h-10 px-4 bg-[#ededed] text-[#141414] rounded-full text-sm font-bold">
+                  <div class="px-4 py-4 flex gap-4">
+                    <button @click="borrarDatos()" class="h-10 px-4 bg-[#ededed] text-[#141414] rounded-full text-sm font-bold">
                       Borrar datos
                     </button>
-                    <button @click="enviarConecciones()"
-                      class="h-10 px-4 bg-black text-white rounded-full text-sm font-bold">
+                    <button @click="enviarConecciones()" :disabled="archivoEnviado"
+                      class="h-10 px-4 bg-black text-white rounded-full text-sm font-bold disabled:opacity-50">
                       Enviar
                     </button>
                   </div>

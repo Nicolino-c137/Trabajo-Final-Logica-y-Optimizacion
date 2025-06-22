@@ -6,14 +6,15 @@
         return {
           vuelos: JSON.parse(localStorage.getItem('vuelos')) || [],
           archivoOriginal: null,
-          mensaje: '',
-          
+          archivoEnviado: localStorage.getItem('archivoEnviado') === 'true',
+          mensaje: localStorage.getItem('mensaje') || '',
+          nombreArchivo: localStorage.getItem('nombreArchivo') || '',
           loadFile(event) {
             const file = event.target.files[0];
             if (!file) return;
             this.archivoOriginal = file;
-
-
+            this.nombreArchivo = file.name;
+            localStorage.setItem('nombreArchivo', this.nombreArchivo);
             const reader = new FileReader();
             reader.onload = (e) => {
               console.log("Archivo leído:", e.target.result);
@@ -31,6 +32,10 @@
                 };
               });
               localStorage.setItem('vuelos', JSON.stringify(this.vuelos));
+              this.archivoEnviado = false;
+              localStorage.setItem('archivoEnviado', 'false');
+              this.mensaje = '';
+              localStorage.setItem('mensaje', '');
             };
             reader.readAsText(file);
           },
@@ -50,7 +55,10 @@
                 body: formData
               });
               const data = await response.json();
-              this.mensaje = data.mensaje || 'Datos enviados correctamente';
+              this.mensaje = data.mensaje || 'Archivo subido exitosamente.';
+              this.archivoEnviado = true;
+              localStorage.setItem('mensaje', this.mensaje);
+              localStorage.setItem('archivoEnviado', 'true');
             } catch (error) {
               this.mensaje = 'Error al enviar los datos';
               console.error(error)
@@ -59,30 +67,16 @@
 
           borrarDatos() {
             localStorage.removeItem('vuelos');
+            localStorage.removeItem('archivoEnviado');
+            localStorage.removeItem('mensaje');
+            localStorage.removeItem('nombreArchivo')
             this.vuelos = [];
-
-            if (this.archivoOriginal) {
-              const nombreArchivo = this.archivoOriginal.name;
-
-              fetch(`http://127.0.0.1:8000/borrar_archivo_local/${encodeURIComponent(nombreArchivo)}`, {
-                method: 'DELETE'
-              })
-              .then(response => {
-                if (!response.ok) throw new Error("No se pudo eliminar en el servidor");
-                return response.json();
-              })
-              .then(data => {
-                console.log(data.mensaje);
-              })
-              .catch(error => {
-                console.error('Error al eliminar el archivo en el servidor:', error);
-              });
-            }
-
             this.archivoOriginal = null;
-            this.mensaje = "Datos borrados del almacenamiento local.";
+            this.archivoEnviado = false;
+            this.mensaje = "Datos borrados exitosamente, Por favor recargue la pagina.";
+            this.nombreArchivo = '';
           }
-        };
+        }
       }
     </script>
 
@@ -139,9 +133,9 @@
                         <tr class="border-t">
                           <td class="px-4 py-2 text-sm" x-text="vuelo.id"></td>
                           <td class="px-4 py-2 text-sm" x-text="vuelo.origen"></td>
-                          <td class="px-4 py-2 text-sm" x-text="vuelo.hl"></td>
+                          <td class="px-4 py-2 text-sm" x-text="vuelo.dept"></td>
                           <td class="px-4 py-2 text-sm" x-text="vuelo.destino"></td>
-                          <td class="px-4 py-2 text-sm" x-text="vuelo.sl"></td>
+                          <td class="px-4 py-2 text-sm" x-text="vuelo.arrt"></td>
                           <td class="px-4 py-2 text-sm" x-text="vuelo.capacidad"></td>
                         </tr>
                       </template>
@@ -149,13 +143,12 @@
                   </table>
 
                   <!-- Botón enviar -->
-                  <div class="px-4 py-4">
-                    <button @click="borrarDatos()" 
-                      class="h-10 px-4 bg-[#ededed] text-[#141414] rounded-full text-sm font-bold">
+                  <div class="px-4 py-4 flex gap-4">
+                    <button @click="borrarDatos()" class="h-10 px-4 bg-[#ededed] text-[#141414] rounded-full text-sm font-bold">
                       Borrar datos
                     </button>
-                    <button @click="enviarVuelos()"
-                      class="h-10 px-4 bg-black text-white rounded-full text-sm font-bold">
+                    <button @click="enviarVuelos()" :disabled="archivoEnviado"
+                      class="h-10 px-4 bg-black text-white rounded-full text-sm font-bold disabled:opacity-50">
                       Enviar
                     </button>
                   </div>

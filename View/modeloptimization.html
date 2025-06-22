@@ -1,156 +1,130 @@
-<html>
+<!DOCTYPE html>
+<html lang="es" x-data="optimizacionApp()">
   <head>
-    <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin="" />
-    <link
-      rel="stylesheet"
-      as="style"
-      onload="this.rel='stylesheet'"
-      href="https://fonts.googleapis.com/css2?display=swap&amp;family=Noto+Sans%3Awght%40400%3B500%3B700%3B900&amp;family=Plus+Jakarta+Sans%3Awght%40400%3B500%3B700%3B800"
-    />
+    <!-- Alpine.js App -->
+    <script>
+      function optimizacionApp() {
+        return {
+          cargando: false,
+          resultados: JSON.parse(localStorage.getItem("resultados")) || [],
+          ingresosTotales: parseFloat(localStorage.getItem("ingresosTotales")) || 0,
 
-    <title>Modelo de optimizacion</title>
-    <link rel="icon" type="image/x-icon" href="data:image/x-icon;base64," />
+          async ejecutarOptimizacion() {
+            this.cargando = true;
+            this.resultados = [];
+            this.ingresosTotales = 0;
 
+            try {
+              await fetch("http://127.0.0.1:8000/ejecutar_modelo", { method: "POST" });
+              await fetch("http://127.0.0.1:8000/obtener_solucion");
+              const res = await fetch("http://127.0.0.1:8000/ver_solucion");
+              this.resultados = await res.json();
+              localStorage.setItem("resultados", JSON.stringify(this.resultados));
+
+              // Calcular ingreso total
+              this.ingresosTotales = this.resultados.reduce(
+                (sum, fila) => sum + parseFloat(fila['value'] || 0),
+                0
+              );
+              localStorage.setItem("ingresosTotales", this.ingresosTotales);
+
+            } catch (error) {
+              alert("Error al ejecutar el modelo");
+              console.error(error);
+            } finally {
+              this.cargando = false;
+            }
+          }
+        };
+      }
+    </script>
+
+    <meta charset="UTF-8" />
+    <title>Ejecutar Modelo</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?display=swap&family=Noto+Sans:wght@400;500;700;900&family=Plus+Jakarta+Sans:wght@400;500;700;800">
   </head>
+
   <body>
-    <div
-      class="relative flex size-full min-h-screen flex-col bg-neutral-50 group/design-root overflow-x-hidden"
-      style='--checkbox-tick-svg: url(&apos;data:image/svg+xml,%3csvg viewBox=%270 0 16 16%27 fill=%27rgb(250,250,250)%27 xmlns=%27http://www.w3.org/2000/svg%27%3e%3cpath d=%27M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z%27/%3e%3c/svg%3e&apos;); font-family: "Plus Jakarta Sans", "Noto Sans", sans-serif;'
-    >
+    <div class="relative flex size-full min-h-screen flex-col bg-neutral-50 group/design-root overflow-x-hidden" style='font-family: "Plus Jakarta Sans", "Noto Sans", sans-serif;'>
       <div class="layout-container flex h-full grow flex-col">
-        <header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-b-[#ededed] px-10 py-3">
+        <header class="flex items-center justify-between border-b border-[#ededed] px-10 py-3">
           <div class="flex items-center gap-4 text-[#141414]">
             <div class="size-4">
-              <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 4H17.3334V17.3334H30.6666V30.6666H44V44H4V4Z" fill="currentColor"></path></svg>
+              <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M44 4H30.6666V17.3334H17.3334V30.6666H4V44H44V4Z" fill="currentColor"></path>
+              </svg>
             </div>
-            <h2 class="text-[#141414] text-lg font-bold leading-tight tracking-[-0.015em]">SkyHigh</h2>
+            <h2 class="text-lg font-bold tracking-[-0.015em]">SkyHigh</h2>
           </div>
-          <div class="flex flex-1 justify-end gap-8">
-            <div class="flex items-center gap-9">
-              <a class="text-[#141414] text-sm font-medium leading-normal" href="Dashboard.html">Panel</a>
-              <a class="text-[#141414] text-sm font-medium leading-normal" href="home.html">Inicio</a>
-            </div>
-          </div>
+          <nav class="flex gap-8 text-sm font-medium">
+            <a href="Dashboard.html" class="text-[#141414]">Panel</a>
+            <a href="#" class="text-[#141414] cursor-pointer"onclick="localStorage.clear(); window.location.href='home.html'; return false;">
+            Inicio</a>
+          </nav>
         </header>
+
         <div class="px-40 flex flex-1 justify-center py-5">
           <div class="layout-content-container flex flex-col max-w-[960px] flex-1">
-            <div class="flex flex-wrap justify-between gap-3 p-4"><p class="text-[#141414] tracking-light text-[32px] font-bold leading-tight min-w-72">Optimization</p></div>
+            <div class="flex flex-wrap justify-between gap-3 p-4">
+              <p class="text-[32px] font-bold">Optimización</p>
+            </div>
+
+            <!-- Botón ejecutar -->
             <div class="flex px-4 py-3 justify-start">
-              <button
-                class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 px-4 bg-black text-neutral-50 text-sm font-bold leading-normal tracking-[0.015em]"
-              >
-                <span class="truncate">Ejecutar optimizador</span>
+              <button @click="ejecutarOptimizacion"
+                class="cursor-pointer rounded-full h-10 px-4 bg-black text-neutral-50 text-sm font-bold leading-normal tracking-[0.015em]"
+                :disabled="cargando">
+                <span x-text="cargando ? 'Ejecutando...' : 'Ejecutar optimizador'"></span>
               </button>
             </div>
-            <div class="flex flex-col gap-3 p-4">
-              <div class="flex gap-6 justify-between"><p class="text-[#141414] text-base font-medium leading-normal">Optimizacion en progreso...</p></div>
-              <div class="rounded bg-[#dbdbdb]"><div class="h-2 rounded bg-black" style="width: 60%;"></div></div>
-              <p class="text-neutral-500 text-sm font-normal leading-normal">Tiempo estimado: 5 minutos</p>
+
+            <!-- Indicador de carga -->
+            <div class="px-4 py-3 text-neutral-600 text-sm" x-show="cargando">
+              Modelo ejecutando, por favor espere los resultados...
             </div>
-            <h2 class="text-[#141414] text-[22px] font-bold leading-tight tracking-[-0.015em] px-4 pb-3 pt-5">Resultados</h2>
-            <div class="px-4 py-3 @container">
-              <div class="flex overflow-hidden rounded-xl border border-[#dbdbdb] bg-neutral-50">
-                <table class="flex-1">
-                  <thead>
-                    <tr class="bg-neutral-50">
-                      <th class="table-ded72469-32da-4326-85be-8b9817004447-column-120 px-4 py-3 text-left text-[#141414] w-[400px] text-sm font-medium leading-normal">
-                        Itinerary
-                      </th>
-                      <th class="table-ded72469-32da-4326-85be-8b9817004447-column-240 px-4 py-3 text-left text-[#141414] w-[400px] text-sm font-medium leading-normal">
-                        Assigned Demand
-                      </th>
-                      <th class="table-ded72469-32da-4326-85be-8b9817004447-column-360 px-4 py-3 text-left text-[#141414] w-[400px] text-sm font-medium leading-normal">
-                        Generated Revenue
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr class="border-t border-t-[#dbdbdb]">
-                      <td class="table-ded72469-32da-4326-85be-8b9817004447-column-120 h-[72px] px-4 py-2 w-[400px] text-[#141414] text-sm font-normal leading-normal">
-                        Itinerary 1
-                      </td>
-                      <td class="table-ded72469-32da-4326-85be-8b9817004447-column-240 h-[72px] px-4 py-2 w-[400px] text-neutral-500 text-sm font-normal leading-normal">120</td>
-                      <td class="table-ded72469-32da-4326-85be-8b9817004447-column-360 h-[72px] px-4 py-2 w-[400px] text-neutral-500 text-sm font-normal leading-normal">
-                        $15,000
-                      </td>
-                    </tr>
-                    <tr class="border-t border-t-[#dbdbdb]">
-                      <td class="table-ded72469-32da-4326-85be-8b9817004447-column-120 h-[72px] px-4 py-2 w-[400px] text-[#141414] text-sm font-normal leading-normal">
-                        Itinerary 2
-                      </td>
-                      <td class="table-ded72469-32da-4326-85be-8b9817004447-column-240 h-[72px] px-4 py-2 w-[400px] text-neutral-500 text-sm font-normal leading-normal">150</td>
-                      <td class="table-ded72469-32da-4326-85be-8b9817004447-column-360 h-[72px] px-4 py-2 w-[400px] text-neutral-500 text-sm font-normal leading-normal">
-                        $18,000
-                      </td>
-                    </tr>
-                    <tr class="border-t border-t-[#dbdbdb]">
-                      <td class="table-ded72469-32da-4326-85be-8b9817004447-column-120 h-[72px] px-4 py-2 w-[400px] text-[#141414] text-sm font-normal leading-normal">
-                        Itinerary 3
-                      </td>
-                      <td class="table-ded72469-32da-4326-85be-8b9817004447-column-240 h-[72px] px-4 py-2 w-[400px] text-neutral-500 text-sm font-normal leading-normal">100</td>
-                      <td class="table-ded72469-32da-4326-85be-8b9817004447-column-360 h-[72px] px-4 py-2 w-[400px] text-neutral-500 text-sm font-normal leading-normal">
-                        $12,000
-                      </td>
-                    </tr>
-                    <tr class="border-t border-t-[#dbdbdb]">
-                      <td class="table-ded72469-32da-4326-85be-8b9817004447-column-120 h-[72px] px-4 py-2 w-[400px] text-[#141414] text-sm font-normal leading-normal">
-                        Itinerary 4
-                      </td>
-                      <td class="table-ded72469-32da-4326-85be-8b9817004447-column-240 h-[72px] px-4 py-2 w-[400px] text-neutral-500 text-sm font-normal leading-normal">80</td>
-                      <td class="table-ded72469-32da-4326-85be-8b9817004447-column-360 h-[72px] px-4 py-2 w-[400px] text-neutral-500 text-sm font-normal leading-normal">
-                        $10,000
-                      </td>
-                    </tr>
-                    <tr class="border-t border-t-[#dbdbdb]">
-                      <td class="table-ded72469-32da-4326-85be-8b9817004447-column-120 h-[72px] px-4 py-2 w-[400px] text-[#141414] text-sm font-normal leading-normal">
-                        Itinerary 5
-                      </td>
-                      <td class="table-ded72469-32da-4326-85be-8b9817004447-column-240 h-[72px] px-4 py-2 w-[400px] text-neutral-500 text-sm font-normal leading-normal">110</td>
-                      <td class="table-ded72469-32da-4326-85be-8b9817004447-column-360 h-[72px] px-4 py-2 w-[400px] text-neutral-500 text-sm font-normal leading-normal">
-                        $13,000
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
+
+            <!-- Tabla de resultados -->
+            <template x-if="resultados.length > 0">
+              <div class="px-4 py-3 @container">
+                <h3 class="text-lg font-bold px-2 py-2">Resultados del Modelo</h3>
+                <div class="overflow-hidden rounded-xl border border-[#dbdbdb] bg-neutral-50">
+                  <table class="w-full">
+                    <thead>
+                      <tr class="bg-neutral-50">
+                        <th class="px-4 py-3 text-left text-sm font-medium">ID Itinerario</th>
+                        <th class="px-4 py-3 text-left text-sm font-medium">Demanda Estimada</th>
+                        <th class="px-4 py-3 text-left text-sm font-medium">Venta Recomendada</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <template x-for="fila in resultados" :key="fila['Itineraries.ItinID']">
+                        <tr class="border-t">
+                          <td class="px-4 py-2 text-sm" x-text="fila['Itineraries.ItinID']"></td>
+                          <td class="px-4 py-2 text-sm" x-text="fila['Itineraries.dmd']"></td>
+                          <td class="px-4 py-2 text-sm" x-text="fila['value']"></td>
+                        </tr>
+                      </template>
+                    </tbody>
+                  </table>
+
+                  <!-- Ingreso total -->
+                  <div class="pt-4 px-4 py-2 text-base font-semibold text-[#141414]">
+                    Ingreso total: $<span x-text="ingresosTotales.toFixed(2)"></span>
+                  </div>
+
+                  <!-- Botón descarga -->
+                  <div class="px-4 py-4">
+                    <a href="http://127.0.0.1:8000/descargar_solucion"
+                      class="h-10 px-4 bg-[#ededed] text-[#141414] rounded-full text-sm font-bold">
+                      Exportar datos
+                    </a>
+                  </div>
+                </div>
               </div>
-              <style>
-                          @container(max-width:120px){.table-ded72469-32da-4326-85be-8b9817004447-column-120{display: none;}}
-                @container(max-width:240px){.table-ded72469-32da-4326-85be-8b9817004447-column-240{display: none;}}
-                @container(max-width:360px){.table-ded72469-32da-4326-85be-8b9817004447-column-360{display: none;}}
-              </style>
-            </div>
-            <div class="flex flex-wrap gap-4 p-4">
-              <div class="flex min-w-[158px] flex-1 flex-col gap-2 rounded-xl p-6 border border-[#dbdbdb]">
-                <p class="text-[#141414] text-base font-medium leading-normal">Ingresos totales esperados</p>
-                <p class="text-[#141414] tracking-light text-2xl font-bold leading-tight">$68,000</p>
-              </div>
-            </div>
-            <div class="px-4">
-              <label class="flex gap-x-3 py-3 flex-row">
-                <input
-                  type="checkbox"
-                  class="h-5 w-5 rounded border-[#dbdbdb] border-2 bg-transparent text-black checked:bg-black checked:border-black checked:bg-[image:--checkbox-tick-svg] focus:ring-0 focus:ring-offset-0 focus:border-[#dbdbdb] focus:outline-none"
-                  checked=""e
-                />
-                <p class="text-[#141414] text-base font-normal leading-normal">Se cumplieron todas las restricciones</p>
-              </label>
-              <label class="flex gap-x-3 py-3 flex-row">
-                <input
-                  type="checkbox"
-                  class="h-5 w-5 rounded border-[#dbdbdb] border-2 bg-transparent text-black checked:bg-black checked:border-black checked:bg-[image:--checkbox-tick-svg] focus:ring-0 focus:ring-offset-0 focus:border-[#dbdbdb] focus:outline-none"
-                  checked=""
-                />
-                <p class="text-[#141414] text-base font-normal leading-normal">No se detectaron violaciones</p>
-              </label>
-            </div>
-            <div class="flex px-4 py-3 justify-start">
-              <button
-                class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 px-4 bg-[#ededed] text-[#141414] text-sm font-bold leading-normal tracking-[0.015em]"
-              >
-                <span class="truncate">Exportar datos</span>
-              </button>
-            </div>
+            </template>
           </div>
         </div>
       </div>
