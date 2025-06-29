@@ -44,6 +44,7 @@
 
             const formData = new FormData();
             formData.append('archivo', this.archivoOriginal);
+            this.mensaje= "Subiendo archivo..."
 
             try {
               const response = await fetch('http://127.0.0.1:8000/subir_archivo', {
@@ -69,8 +70,9 @@
             this.itinerarios = [];
             this.archivoOriginal = null;
             this.archivoEnviado = false;
-            this.mensaje = "Datos borrados exitosamente, Por favor recargue la pagina.";
+            this.mensaje = "Datos borrados exitosamente. Por favor seleccione un archivo.";
             this.nombreArchivo = '';
+            this.$refs.fileInput.value = null;
           }
         }
       }
