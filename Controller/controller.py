@@ -14,16 +14,17 @@ async def cargar_archivo(archivo: UploadFile):
     with open(archivo.filename, "wb") as archi:
         archi.write(await archivo.read())
     cos.subir_archivo(archivo.filename)
-    return {"Mensaje": "Archivo cargado exitosamente"}
+    return {"Mensaje": "Archivo cargado exitosamete"}
 
 @router.post("/ejecutar_modelo")
 def ejecutar_modelo():
     watson_runtime.ejecutar_modelo()
-    return {"Mensaje": "Modelo ejecutado exitosamente"}
 
 @router.get("/obtener_solucion")
 def obtener_solucion():
     cos.get_solucion()
+    cos.prepocesamiento()
+    cos.añadir_vuelos_solucion()
     return {"Mensaje": "Solución obtenida exitosamente"}
 
 @router.get("/ver_solucion")
@@ -45,7 +46,6 @@ def descargar_solucion():
 @router.delete("/borrar_archivo_local/{archivo}")
 def eliminar_archivo(archivo: str):
     try:
-        print(archivo)
         os.remove(archivo)
         return {"Mensaje": "Archivo eliminado exitosamente"}
     except FileNotFoundError:

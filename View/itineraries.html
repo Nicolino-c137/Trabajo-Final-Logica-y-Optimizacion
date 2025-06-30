@@ -18,8 +18,19 @@
             const reader = new FileReader();
             reader.onload = (e) => {
               const lines = e.target.result.split(/\r?\n/);
+              const delimitadoresPosibles = [',', ';'];
+              const primeraLinea = lines[0];
+              let delimitador = ',';
+              let maxCount = 0;
+              for (const d of delimitadoresPosibles) {
+                const count = (primeraLinea.match(new RegExp(`\\${d}`, 'g')) || []).length;
+                if (count > maxCount) {
+                  delimitador = d;
+                  maxCount = count;
+                }
+              }
               this.itinerarios = lines.slice(1).filter(Boolean).map(line => {
-                const [id, cantV, demanda, tarifa] = line.split(';');
+                const [id, cantV, demanda, tarifa] = line.split(delimitador);
                 return {
                   id: id.trim(),
                   cantV: cantV.trim(),
@@ -157,7 +168,7 @@
             <!-- Siguiente -->
             <div class="flex justify-stretch">
               <div class="flex flex-1 gap-3 flex-wrap px-4 py-3 justify-end">
-                <a href="Flights.html" class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 px-4 bg-black text-neutral-50 text-sm font-bold leading-normal tracking-[0.015em]">
+                <a href="Flights.html" @click="localStorage.removeItem('mensaje')" class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 px-4 bg-black text-neutral-50 text-sm font-bold leading-normal tracking-[0.015em]">
                   <span class="truncate">Siguiente</span>
                 </a>
               </div>

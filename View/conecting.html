@@ -18,9 +18,19 @@
             const reader = new FileReader();
             reader.onload = (e) => {
               const lines = e.target.result.split(/\r?\n/);
-              const headers = lines[0].split(';');
+              const delimitadoresPosibles = [',', ';'];
+              const primeraLinea = lines[0];
+              let delimitador = ',';
+              let maxCount = 0;
+              for (const d of delimitadoresPosibles) {
+                const count = (primeraLinea.match(new RegExp(`\\${d}`, 'g')) || []).length;
+                if (count > maxCount) {
+                  delimitador = d;
+                  maxCount = count;
+                }
+              }
               this.conecciones = lines.slice(1).filter(Boolean).map(line => {
-                const [idT, idV] = line.split(';');
+                const [idT, idV] = line.split(delimitador);
                 return {
                   idT: idT.trim(),
                   idV: idV.trim(),
@@ -41,6 +51,7 @@
             }
             const formData = new FormData();
             formData.append('archivo', this.archivoOriginal);
+            this.mensaje = "Subiendo archivo...";
             try {
               const response = await fetch('http://127.0.0.1:8000/subir_archivo', {
                 method: 'POST',
@@ -52,7 +63,7 @@
               localStorage.setItem('mensaje', this.mensaje);
               localStorage.setItem('archivoEnviado', 'true');
             } catch (error) {
-              this.mensaje = 'Error al enviar los datos';
+              this.mensaje = 'Error al subir el archivo.';
               console.error(error)
             }
           },
@@ -64,8 +75,9 @@
             this.conecciones = [];
             this.archivoOriginal = null;
             this.archivoEnviado = false;
-            this.mensaje = "Datos borrados exitosamente, Por favor recargue la pagina.";
+            this.mensaje = "Datos borrados exitosamente. Por favor seleccione un archivo.";
             this.nombreArchivo = '';
+            this.$refs.fileInput.value = null;
           }
         }
       }
@@ -125,14 +137,12 @@
             <div class="flex justify-stretch">
               <div class="flex flex-1 gap-3 flex-wrap px-4 py-3 justify-end">
                 <a href="Flights.html"
-                class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 px-4 bg-[#ededed] text-[#141414] text-sm font-bold leading-normal tracking-[0.015em]"
-                >
+                class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 px-4 bg-[#ededed] text-[#141414] text-sm font-bold leading-normal tracking-[0.015em]">
                 <span class="truncate">Atras</span>
                 </a>
                 <a href="modeloptimization.html"
-                class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 px-4 bg-black text-neutral-50 text-sm font-bold leading-normal tracking-[0.015em]"
-                >
-                <span class="truncate">Finalizar</span>
+                class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 px-4 bg-black text-neutral-50 text-sm font-bold leading-normal tracking-[0.015em]">
+                  <span class="truncate">Finalizar</span>
                 </a>
               </div>
             </div>

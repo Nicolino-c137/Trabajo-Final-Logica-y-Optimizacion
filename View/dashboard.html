@@ -43,13 +43,21 @@
           <p class="text-[32px] font-bold text-[#141414]">Panel</p>
         </div>
 
-        <h2 class="text-[#141414] text-[22px] font-bold leading-tight tracking-[-0.015em] px-4 pb-3 pt-5">
-          Demanda Estimada vs Venta Recomendada
-        </h2>
+        <div class="flex flex-col gap-6 lg:flex-row">
+          <!--Grafico Demanda vs Venta-->
+          <div class="flex-1 rounded-xl border border-[#999] bg-white p-6 shadow-sm">
+            <h3 class="text-sm font-semibold text-neutral-700 pb-2 text-center w-full">Demanda Estimada vs Venta Recomendada</h3>
+            <canvas id="graficoResultados" style="max-height: 400px;"></canvas>
+          </div>
 
-        <div class="rounded-xl border border-[#dbdbdb] bg-white p-6 shadow-sm">
-          <canvas id="graficoResultados" style="max-height: 400px;"></canvas>
+          <!--Grafico Ingreso por Itinerario-->
+          <div class="flex-1 rounded-xl border border-[#999] bg-white p-6 shadow-sm">
+            <h3 class="text-sm font-semibold text-neutral-700 pb-2 text-center w-full">Ingreso por Itinerario</h3>
+            <canvas id="graficoIngresos" style="max-height: 400px;"></canvas>
+          </div>
         </div>
+
+        
       </div>
     </main>
   </div>
@@ -112,6 +120,59 @@
             tooltip: {
               mode: "index",
               intersect: false,
+            },
+          },
+        },
+      });
+
+      const ingresos= datos.map((fila) => {
+        const fare= Number(fila["Itineraries.fare"]) || 0;
+        const value= Number(fila["value"]) || 0;
+        return fare * value;
+      });
+
+      const ctx2= document.getElementById("graficoIngresos").getContext("2d");
+
+      new Chart(ctx2, {
+        type: "bar",
+        data: {
+          labels: etiquetas,
+          datasets: [
+            {
+              label: "Ingreso Total",
+              data: ingresos,
+              backgroundColor: "rgba(250, 204, 21, 0.8)",
+              borderRadius: 4,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: {
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: "Ingreso ($)",
+              },
+            },
+            x: {
+              title: {
+                display: true,
+                text: "ID Itinerario",
+              },
+            },
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              mode: "index",
+              intersect: false,
+              callbacks: {
+                label: function (context) {
+                  return `$${context.formattedValue}`;
+                },
+              },
             },
           },
         },

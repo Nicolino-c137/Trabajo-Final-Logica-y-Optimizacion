@@ -2,7 +2,3 @@ __pycache__/
 *.py[cod]
 .venv/
 .env
-Itineraries.csv
-ItineraryLegs.csv
-Solucion.csv
-FlightLegs.csv

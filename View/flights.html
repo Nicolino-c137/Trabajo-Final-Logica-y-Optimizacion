@@ -19,9 +19,19 @@
             reader.onload = (e) => {
               console.log("Archivo leído:", e.target.result);
               const lines = e.target.result.split(/\r?\n/);
-              const headers = lines[0].split(';');
+              const delimitadoresPosibles = [',', ';'];
+              const primeraLinea = lines[0];
+              let delimitador = ',';
+              let maxCount = 0;
+              for (const d of delimitadoresPosibles) {
+                const count = (primeraLinea.match(new RegExp(`\\${d}`, 'g')) || []).length;
+                if (count > maxCount) {
+                  delimitador = d;
+                  maxCount = count;
+                }
+              }
               this.vuelos = lines.slice(1).filter(Boolean).map(line => {
-                const [id, origen, dept, destino, arrt, capacidad] = line.split(';');
+                const [id, origen, dept, destino, arrt, capacidad] = line.split(delimitador);
                 return {
                   id: id.trim(),
                   origen: origen.trim(),
@@ -48,6 +58,7 @@
 
             const formData = new FormData();
             formData.append('archivo', this.archivoOriginal);
+            this.mensaje = "Subiendo archivo...";
 
             try {
               const response = await fetch('http://127.0.0.1:8000/subir_archivo', {
@@ -60,7 +71,7 @@
               localStorage.setItem('mensaje', this.mensaje);
               localStorage.setItem('archivoEnviado', 'true');
             } catch (error) {
-              this.mensaje = 'Error al enviar los datos';
+              this.mensaje = 'Error al subir el archivo.';
               console.error(error)
             }
           },
@@ -73,8 +84,9 @@
             this.vuelos = [];
             this.archivoOriginal = null;
             this.archivoEnviado = false;
-            this.mensaje = "Datos borrados exitosamente, Por favor recargue la pagina.";
+            this.mensaje = "Datos borrados exitosamente. Por favor seleccione un archivo.";
             this.nombreArchivo = '';
+            this.$refs.fileInput.value = null;
           }
         }
       }
@@ -164,10 +176,8 @@
                 >
                 <span class="truncate">Atras</span>
                 </a>
-                <a href="Conecting.html"
-                class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 px-4 bg-black text-neutral-50 text-sm font-bold leading-normal tracking-[0.015em]"
-                >
-                <span class="truncate">Siguiente</span>
+                <a href="Conecting.html" @click="localStorage.removeItem('mensaje')" class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 px-4 bg-black text-neutral-50 text-sm font-bold leading-normal tracking-[0.015em]">
+                  <span class="truncate">Siguiente</span>
                 </a>
               </div>
             </div>

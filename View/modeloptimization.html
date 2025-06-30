@@ -8,6 +8,30 @@
           cargando: false,
           resultados: JSON.parse(localStorage.getItem("resultados")) || [],
           ingresosTotales: parseFloat(localStorage.getItem("ingresosTotales")) || 0,
+          estadoJob: '',
+
+          async verEstado(jobId) {
+            this.estadoJob = 'Iniciando...';
+            const intervalo = setInterval(async () => {
+              const res = await fetch("http://127.0.0.1:8000/estado_job/${jobId}");
+              const data = await res.json();
+              this.estadoJob = "Estado del modelo: ${data.state}";
+
+              if (data.state === 'completed' || data.state === 'failes') {
+                clearInterval(intervalo);
+                await this.obtenerResultados();
+              }
+            }, 5000);
+          },
+
+          parseVuelos(vuelosStr) {
+            try {
+              const vuelos = JSON.parse(vuelosStr.replace(/'/g, '"')); // Convierte comillas simples a dobles
+              return vuelos.map(par => par.join(' → ')).join(' / ');
+            } catch (e) {
+              return 'Formato inválido';
+            }
+          },
 
           async ejecutarOptimizacion() {
             this.cargando = true;
@@ -23,7 +47,11 @@
 
               // Calcular ingreso total
               this.ingresosTotales = this.resultados.reduce(
-                (sum, fila) => sum + parseFloat(fila['value'] || 0),
+                (sum, fila) => {
+                  const value= parseFloat(fila['value'] || 0);
+                  const fare= parseFloat(fila['Itineraries.fare'] || 0);
+                  return sum + (value * fare);
+                },
                 0
               );
               localStorage.setItem("ingresosTotales", this.ingresosTotales);
@@ -90,29 +118,35 @@
             <template x-if="resultados.length > 0">
               <div class="px-4 py-3 @container">
                 <h3 class="text-lg font-bold px-2 py-2">Resultados del Modelo</h3>
-                <div class="overflow-hidden rounded-xl border border-[#dbdbdb] bg-neutral-50">
+                <div class="overflow-hidden rounded-xl border border-[#999] bg-neutral-50">
                   <table class="w-full">
                     <thead>
                       <tr class="bg-neutral-50">
-                        <th class="px-4 py-3 text-left text-sm font-medium">ID Itinerario</th>
-                        <th class="px-4 py-3 text-left text-sm font-medium">Demanda Estimada</th>
-                        <th class="px-4 py-3 text-left text-sm font-medium">Venta Recomendada</th>
+                        <th class="px-4 py-3 text-center text-sm font-medium">ID Itinerario</th>
+                        <th class="px-4 py-3 text-center text-sm font-medium">Vuelos</th>
+                        <th class="px-4 py-3 text-center text-sm font-medium">Tarifa del Itinerario</th>
+                        <th class="px-4 py-3 text-center text-sm font-medium">Volúmen de Venta Óptimo</th>
                       </tr>
                     </thead>
                     <tbody>
                       <template x-for="fila in resultados" :key="fila['Itineraries.ItinID']">
                         <tr class="border-t">
-                          <td class="px-4 py-2 text-sm" x-text="fila['Itineraries.ItinID']"></td>
-                          <td class="px-4 py-2 text-sm" x-text="fila['Itineraries.dmd']"></td>
-                          <td class="px-4 py-2 text-sm" x-text="fila['value']"></td>
+                          <td class="px-4 py-2 text-sm text-center" x-text="fila['Itineraries.ItinID']"></td>
+                          <td class="px-4 py-2 text-sm text-center" x-text="parseVuelos(fila['Vuelos'])"></td>
+                          <td class="px-4 py-2 text-sm text-center" x-text="fila['Itineraries.fare']"></td>
+                          <td class="px-4 py-2 text-sm text-center " x-text="fila['value']"></td>
                         </tr>
                       </template>
                     </tbody>
                   </table>
 
+                  <div class="px-4 text-sm text-neutral-500">
+                    Se recomienda lograr el volumen de venta óptimo para maximizar los ingresos.
+                  </div>
+
                   <!-- Ingreso total -->
                   <div class="pt-4 px-4 py-2 text-base font-semibold text-[#141414]">
-                    Ingreso total: $<span x-text="ingresosTotales.toFixed(2)"></span>
+                    Máximos ingresos: $<span x-text="ingresosTotales.toFixed(2)"></span>
                   </div>
 
                   <!-- Botón descarga -->
